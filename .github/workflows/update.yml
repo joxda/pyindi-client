@@ -1,0 +1,32 @@
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github"
+          git config --global credential.helper store
+          echo "https://${{ secrets.GH_TOKEN }}:@github.com" > ~/.git-credentials
+      - name: Add upstream and fetch
+        run: |
+          git remote add upstream https://github.com/indilib/pyindi-client.git || true
+          git fetch upstream
+          git checkout master
+          git rebase upstream/master
+          git push origin master --force
+
+      - name: Fetch and push tags
+        run: |
+          git fetch --tags upstream
+          git push --tags origin
